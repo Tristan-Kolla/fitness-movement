@@ -35,17 +35,17 @@ def emig(d, alpha, win, wout, beta):
 
 
 def habitat_attack_rates(deltas):
-    return a - deltas, a + deltas
+    return a * (1 - deltas), a * (1 + deltas)
 
 
 def get_fitness(y, deltar, deltas):
     PL, FL, JL, PP, FP, JP = y
 
-    rL = r - deltar
-    rP = r + deltar
+    rL = r * (1 + deltar)
+    rP = r * (1 - deltar)
 
-    aL = a - deltas
-    aP = a + deltas
+    aL = a * (1 - deltas)
+    aP = a * (1 + deltas)
     
     fitPL = 0
     fitPP = 0

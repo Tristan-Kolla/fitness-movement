@@ -1,5 +1,21 @@
+! There are two important subroutines written here that AUTO expectes to find: FUNC() and STPNT(). 
+! FUNC() computes the model equations.
+! STPNT() sets the initial parameter values and an initial equilibrium guess.
+! [WHAT ABOUT THE OTHER SUBROUTINES?!?!?!?!?!?!?! MY UNDERSTANDING IS THAT THEY ARE NOT USED --- CONFIRM!!!!]
+
+! From the 'c.mommon_model' file we set:
+! NDIM (number of dimensions) = 6
+! NPAR (number of parameters) = 40
+! ICP (initial continuation parameter) = 28 (PAR(28) = mu)
+
+! INTENT(IN): input only 
+! INTENT(OUT): output only
+! INTENT(INOUT): can be read and written
+! DOUBLE PRECISION: 64-bit floating point number
+! PAR(*): array of unknown length
+
 SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
-  IMPLICIT NONE
+  IMPLICIT NONE ! Makes it so that every variable does not need to be explicitly defined. 
   INTEGER, INTENT(IN) :: NDIM, IJAC
   INTEGER, INTENT(IN) :: ICP(*)
   DOUBLE PRECISION, INTENT(IN) :: U(NDIM)
@@ -12,12 +28,12 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   DOUBLE PRECISION :: cL,cP,dP,dF,dJ,alphaP,alphaF,alphaJ
   DOUBLE PRECISION :: omegap,omegaf,omegaj,mu,deltar,deltas,beta,toggle
   DOUBLE PRECISION :: rL,rP,aP,aL
-  PL=U(1)
-  FL=U(2)
-  JL=U(3)
-  PP=U(4)
-  FP=U(5)
-  JP=U(6)
+  PL=U(1) ! Predator, littoral
+  FL=U(2) ! Forager, littoral
+  JL=U(3) ! Juvenile, littoral
+  PP=U(4) ! Predator, pelagic
+  FP=U(5) ! Forager, pelagic
+  JP=U(6) ! Juvenile, pelagic
   r=PAR(1)
   a=PAR(2)
   mP=PAR(3)
@@ -42,18 +58,18 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   alphaP=PAR(22)
   alphaF=PAR(23)
   alphaJ=PAR(24)
-  omegap=PAR(25)
-  omegaf=PAR(26)
-  omegaj=PAR(27)
+  omegap=PAR(25) ! I believe these are not used. to be potentially deleted in new version
+  omegaf=PAR(26) ! I believe these are not used. to be potentially deleted in new version
+  omegaj=PAR(27) ! I believe these are not used. to be potentially deleted in new version
   mu=PAR(28)
   deltar=PAR(29)
   deltas=PAR(30)
   beta=PAR(31)
   toggle=PAR(32)
-  rL = r + deltar
-  rP = r - deltar
-  aP = a + deltas
-  aL = a - deltas
+  rL = r*(1.D0 + deltar) !1.D0 means 64-bit floating point number
+  rP = r*(1.D0 - deltar)
+  aP = a*(1.D0 + deltas)
+  aL = a*(1.D0 - deltas)
   F(1) = maturation(gL,JL) - (mP+mu)*PL - emig(dP,toggle,alphaP, fitPL(FL,PL,JL), &
     & fitPP(FP,PP,JP))*PL + emig(dP,toggle,alphaP, fitPP(FP,PP,JP), fitPL(FL,PL,JL))*PP
   F(2) = logistic(rL,bL,FL) - type3(aL,PL,FL,sL) + type1(eL*qL,FL,JL) - emig(dF,toggle,alphaF, &
@@ -71,7 +87,7 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
     & emig(dJ,toggle,alphaJ, fitJP(PP,FP,JP), fitJL(PL,FL,JL))*JP + emig(dJ,toggle,alphaJ, &
     & fitJL(PL,FL,JL), fitJP(PP,FP,JP))*JL
   RETURN
-CONTAINS
+CONTAINS ! the following functions are nested inside FUNC(). They can use variables from FUNC() such as 'rL' or 'aL'
   DOUBLE PRECISION FUNCTION maturation(g,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: g,j
@@ -134,7 +150,12 @@ CONTAINS
   END FUNCTION emig
 END SUBROUTINE FUNC
 
-SUBROUTINE STPNT(NDIM,U,PAR,T)
+! AUTO calls this subroutine to initialize the model. It does three things:
+! 1. Reads optional parameters from experiment_parameters.dat. 
+! 2. Sets defaults parameter values.
+! 3. Computes a reasonable initial equilibrium.
+
+SUBROUTINE STPNT(NDIM,U,PAR,T) 
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NDIM
   DOUBLE PRECISION, INTENT(OUT) :: U(NDIM)
@@ -191,8 +212,8 @@ SUBROUTINE STPNT(NDIM,U,PAR,T)
   IF (ABS(input_deltas).GT.1.0D-14) PAR(30)=input_deltas
 
   U(1:NDIM)=0.D0
-  rL=PAR(1)+PAR(29)
-  rP=PAR(1)-PAR(29)
+  rL=PAR(1)*(1.D0+PAR(29))
+  rP=PAR(1)*(1.D0-PAR(29))
   x=MAX(rL/PAR(5),1.0D-8)
   y=MAX(rP/PAR(7),1.0D-8)
   h=1.0D-6
