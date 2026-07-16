@@ -6,6 +6,7 @@ __pycache__/
 
 .ipynb_checkpoints/
 .mplconfig/
+.Trash-*/
 
 *.so
 *.dylib
@@ -16,4 +17,3 @@ __pycache__/
 venv/
 .venv/
 env/
-
