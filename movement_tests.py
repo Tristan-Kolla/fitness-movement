@@ -48,8 +48,8 @@ def habitat_attack_rates(deltas):
 def get_fitness(y, deltar, deltas):
     PL, FL, JL, PP, FP, JP = y
 
-    rL = r * (1 + deltar)
-    rP = r * (1 - deltar)
+    rL = r * (1 - deltar)
+    rP = r * (1 + deltar)
 
     aL = a * (1 - deltas)
     aP = a * (1 + deltas)
