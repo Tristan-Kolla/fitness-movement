@@ -28,6 +28,7 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   DOUBLE PRECISION :: cL,cP,dP,dF,dJ,alphaP,alphaF,alphaJ
   DOUBLE PRECISION :: omegap,omegaf,omegaj,mu,deltar,deltas,beta,toggle
   DOUBLE PRECISION :: rL,rP,aP,aL
+  DOUBLE PRECISION, PARAMETER :: payoff_floor=1.0D-12
   PL=U(1) ! Predator, littoral
   FL=U(2) ! Forager, littoral
   JL=U(3) ! Juvenile, littoral
@@ -126,22 +127,28 @@ CONTAINS ! the following functions are nested inside FUNC(). They can use variab
   DOUBLE PRECISION FUNCTION fitFL(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
-    fitFL = (rL - bL*f) - (aL*p*f)/(1 + sL*f*f) + eL*qL*j
+    ! Forager payoff is log expected lineage multiplier over a one-year horizon:
+    ! log(exp(R_F,L)) = R_F,L, written explicitly in log form.
+    fitFL = LOG(MAX(EXP((rL - bL*f) - (aL*p*f)/(1 + sL*f*f) + eL*qL*j), payoff_floor))
   END FUNCTION fitFL
   DOUBLE PRECISION FUNCTION fitFP(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
-    fitFP = (rP - bP*f) - (aP*p*f)/(1 + sP*f*f) + eP*qP*j
+    ! Forager payoff is log expected lineage multiplier over a one-year horizon:
+    ! log(exp(R_F,P)) = R_F,P, written explicitly in log form.
+    fitFP = LOG(MAX(EXP((rP - bP*f) - (aP*p*f)/(1 + sP*f*f) + eP*qP*j), payoff_floor))
   END FUNCTION fitFP
   DOUBLE PRECISION FUNCTION fitJL(p,f,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: p,f,j
-    fitJL = (gL/(1 + j*j)) - qL*f - cL*p
+    ! Juvenile payoff is log maturation-to-death odds.
+    fitJL = LOG(MAX(gL/(1 + j*j), payoff_floor) / MAX(mJ + qL*f + cL*p, payoff_floor))
   END FUNCTION fitJL
   DOUBLE PRECISION FUNCTION fitJP(p,f,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: p,f,j
-    fitJP = (gP/(1 + j*j)) - qP*f - cP*p
+    ! Juvenile payoff is log maturation-to-death odds.
+    fitJP = LOG(MAX(gP/(1 + j*j), payoff_floor) / MAX(mJ + qP*f + cP*p, payoff_floor))
   END FUNCTION fitJP
   DOUBLE PRECISION FUNCTION emig(d,toggle,alpha,win,wout)
     IMPLICIT NONE

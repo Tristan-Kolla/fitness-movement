@@ -17,6 +17,12 @@ eP = 0.2
 gL = 0.2
 gP = 0.2
 
+mJ = 0.1
+qL = 0.2
+qP = 0.2
+cL = 0.02
+cP = 0.02
+
 dP = 0.1
 dF = 0.1
 dJ = 0.1
@@ -24,6 +30,7 @@ dJ = 0.1
 alphaP = 0.25
 alphaF = 0.25
 alphaJ = 0.25
+PAYOFF_FLOOR = 1e-12
 
 
 def sig(x):
@@ -50,28 +57,33 @@ def get_fitness(y, deltar, deltas):
     fitPL = 0
     fitPP = 0
 
-    fitFL = (
+    RF_L = (
         (rL - bL * FL)
         - (aL * PL * FL) / (1 + sL * FL * FL)
-        + eL * aL * JL
+        + eL * qL * JL
     )
 
-    fitFP = (
+    RF_P = (
         (rP - bP * FP)
         - (aP * PP * FP) / (1 + sP * FP * FP)
-        + eP * aP * JP
+        + eP * qP * JP
     )
 
-    fitJL = (
-        gL / (1 + JL * JL)
-        - aL * FL
-        - aL * PL
-    )
+    fitFL = np.log(max(np.exp(RF_L), PAYOFF_FLOOR))
+    fitFP = np.log(max(np.exp(RF_P), PAYOFF_FLOOR))
 
-    fitJP = (
-        gP / (1 + JP * JP)
-        - aP * FP
-        - aP * PP
+    juvenile_maturation_L = gL / (1 + JL * JL)
+    juvenile_death_L = mJ + qL * FL + cL * PL
+    juvenile_maturation_P = gP / (1 + JP * JP)
+    juvenile_death_P = mJ + qP * FP + cP * PP
+
+    fitJL = np.log(
+        max(juvenile_maturation_L, PAYOFF_FLOOR)
+        / max(juvenile_death_L, PAYOFF_FLOOR)
+    )
+    fitJP = np.log(
+        max(juvenile_maturation_P, PAYOFF_FLOOR)
+        / max(juvenile_death_P, PAYOFF_FLOOR)
     )
 
     return fitPL, fitFL, fitJL, fitPP, fitFP, fitJP
