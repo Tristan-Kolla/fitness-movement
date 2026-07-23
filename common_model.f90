@@ -1,40 +1,89 @@
-! There are two important subroutines written here that AUTO expectes to find: FUNC() and STPNT(). 
-! FUNC() computes the model equations.
-! STPNT() sets the initial parameter values and an initial equilibrium guess.
-! [WHAT ABOUT THE OTHER SUBROUTINES?!?!?!?!?!?!?! MY UNDERSTANDING IS THAT THEY ARE NOT USED --- CONFIRM!!!!]
-
-! From the 'c.mommon_model' file we set:
-! NDIM (number of dimensions) = 6
-! NPAR (number of parameters) = 40
-! ICP (initial continuation parameter) = 28 (PAR(28) = mu)
-
-! INTENT(IN): input only 
-! INTENT(OUT): output only
-! INTENT(INOUT): can be read and written
-! DOUBLE PRECISION: 64-bit floating point number
-! PAR(*): array of unknown length
+! The subroutine FUNC() evaluates the right-hand side of the ODE system.
+! Given the current state U(1:6) and parameter values PAR(*), it computes
+! the derivatives F(1:6). AUTO uses the same calling convention for every
+! problem, therefore we include inputs that are declared but not used 
+! (see below for details).
+!
+! Inputs:
+! NDIM - Number of state variables (dimensions) in the ODE system. 
+!        For this model, NDIM = 6.
+!
+! U    - Current state vector of the system:
+!        U(1) = PL, predator in littoral habitat
+!        U(2) = FL, forager in littoral habitat
+!        U(3) = JL, juvenile in littoral habitat
+!        U(4) = PP, predator in pelagic habitat
+!        U(5) = FP, forager in pelagic habitat
+!        U(6) = JP, juvenile in pelagic habitat
+!
+! ICP  - AUTO continuation parameter index array. AUTO uses this to identify
+!        which parameter(s) in PAR are being varied during continuation.
+!        This subroutine receives ICP but does not use it directly.
+!
+! PAR  - Parameter vector containing model parameters. In this subroutine,
+!        PAR is read but not modified.
+!
+! IJAC - Jacobian flag used by AUTO:
+!        0: compute F only
+!        1: compute F and DFDU
+!        2: compute F, DFDU, and DFDP
+!        This subroutine currently ignores IJAC and does not explicitly
+!        compute Jacobian matrices.
+!
+! Outputs:
+! F    - Derivative vector / vector field evaluated at the current state:
+!        F(1) = dPL/dt
+!        F(2) = dFL/dt
+!        F(3) = dJL/dt
+!        F(4) = dPP/dt
+!        F(5) = dFP/dt
+!        F(6) = dJP/dt
+!
+! Optional AUTO outputs:
+! DFDU - Jacobian matrix with respect to state variables:
+!        DFDU(i,j) = partial derivative of F(i) with respect to U(j).
+!        This subroutine declares DFDU but does not fill it.
+!
+! DFDP - Jacobian matrix with respect to parameters:
+!        DFDP(i,j) = partial derivative of F(i) with respect to PAR(j).
+!        This subroutine declares DFDP but does not fill it.
 
 SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
-  IMPLICIT NONE ! Makes it so that every variable does not need to be explicitly defined. 
-  INTEGER, INTENT(IN) :: NDIM, IJAC
-  INTEGER, INTENT(IN) :: ICP(*)
-  DOUBLE PRECISION, INTENT(IN) :: U(NDIM)
-  DOUBLE PRECISION, INTENT(INOUT) :: PAR(*)
+  
+  ! Overrides the default implicit typing rules for names. 
+  IMPLICIT NONE 
+  
+  ! Declaration of inputs / outputs
+  INTEGER, INTENT(IN) :: NDIM, IJAC, ICP(*)
+  DOUBLE PRECISION, INTENT(IN) :: U(NDIM), PAR(*)
   DOUBLE PRECISION, INTENT(OUT) :: F(NDIM)
-  DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,*), DFDP(NDIM,*)
-  DOUBLE PRECISION :: PL,FL,JL,PP,FP,JP
-  DOUBLE PRECISION :: r,a,mP,mJ,bL,sL,bP,sP
-  DOUBLE PRECISION :: eL,eP,fecL,fecP,gL,gP,qL,qP
-  DOUBLE PRECISION :: cL,cP,dP,dF,dJ,alphaP,alphaF,alphaJ
-  DOUBLE PRECISION :: omegap,omegaf,omegaj,mu,deltar,deltas,beta,toggle
-  DOUBLE PRECISION :: rL,rP,aP,aL
-  DOUBLE PRECISION, PARAMETER :: payoff_floor=1.0D-12
-  PL=U(1) ! Predator, littoral
-  FL=U(2) ! Forager, littoral
-  JL=U(3) ! Juvenile, littoral
-  PP=U(4) ! Predator, pelagic
-  FP=U(5) ! Forager, pelagic
-  JP=U(6) ! Juvenile, pelagic
+  DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,*), DFDP(NDIM,*) ! declared but not used
+
+  ! Declaration of state variables
+  DOUBLE PRECISION :: PL, FL, JL
+  DOUBLE PRECISION :: PP, FP, JP
+
+  ! Declaration of model parameters
+  DOUBLE PRECISION :: r, a, mP, mJ
+  DOUBLE PRECISION :: bL, sL, bP, sP
+  DOUBLE PRECISION :: eL, eP, fecL, fecP, gL, gP, qL, qP
+  DOUBLE PRECISION :: cL, cP, dP, dF, dJ
+  DOUBLE PRECISION :: alphaP, alphaF, alphaJ
+  DOUBLE PRECISION :: mu, deltar, deltas, beta, toggle
+  DOUBLE PRECISION :: rL, rP, aL, aP ! habitat specific 
+
+  ! Numerical safeguard
+  DOUBLE PRECISION, PARAMETER :: payoff_floor = 1.0D-12 ! equivalent to 0.000000000001
+  
+  ! State variables
+  PL=U(1)
+  FL=U(2) 
+  JL=U(3)
+  PP=U(4)
+  FP=U(5)
+  JP=U(6)
+  
+  ! Model Parameters
   r=PAR(1)
   a=PAR(2)
   mP=PAR(3)
@@ -59,15 +108,12 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   alphaP=PAR(22)
   alphaF=PAR(23)
   alphaJ=PAR(24)
-  omegap=PAR(25) ! I believe these are not used. to be potentially deleted in new version
-  omegaf=PAR(26) ! I believe these are not used. to be potentially deleted in new version
-  omegaj=PAR(27) ! I believe these are not used. to be potentially deleted in new version
   mu=PAR(28)
   deltar=PAR(29)
   deltas=PAR(30)
   beta=PAR(31)
   toggle=PAR(32)
-  rL = r*(1.D0 - deltar) !1.D0 means 64-bit floating point number
+  rL = r*(1.D0 - deltar) 
   rP = r*(1.D0 + deltar)
   aP = a*(1.D0 + deltas)
   aL = a*(1.D0 - deltas)
@@ -127,27 +173,21 @@ CONTAINS ! the following functions are nested inside FUNC(). They can use variab
   DOUBLE PRECISION FUNCTION fitFL(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
-    ! Forager payoff is log expected lineage multiplier over a one-year horizon:
-    ! log(exp(R_F,L)) = R_F,L, written explicitly in log form.
     fitFL = LOG(MAX(EXP((rL - bL*f) - (aL*p*f)/(1 + sL*f*f) + eL*qL*j), payoff_floor))
   END FUNCTION fitFL
   DOUBLE PRECISION FUNCTION fitFP(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
-    ! Forager payoff is log expected lineage multiplier over a one-year horizon:
-    ! log(exp(R_F,P)) = R_F,P, written explicitly in log form.
     fitFP = LOG(MAX(EXP((rP - bP*f) - (aP*p*f)/(1 + sP*f*f) + eP*qP*j), payoff_floor))
   END FUNCTION fitFP
   DOUBLE PRECISION FUNCTION fitJL(p,f,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: p,f,j
-    ! Juvenile payoff is log maturation-to-death odds.
     fitJL = LOG(MAX(gL/(1 + j*j), payoff_floor) / MAX(mJ + qL*f + cL*p, payoff_floor))
   END FUNCTION fitJL
   DOUBLE PRECISION FUNCTION fitJP(p,f,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: p,f,j
-    ! Juvenile payoff is log maturation-to-death odds.
     fitJP = LOG(MAX(gP/(1 + j*j), payoff_floor) / MAX(mJ + qP*f + cP*p, payoff_floor))
   END FUNCTION fitJP
   DOUBLE PRECISION FUNCTION emig(d,toggle,alpha,win,wout)
