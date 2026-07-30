@@ -1,7 +1,8 @@
+! ----------------------------------------------------------------------------------
 ! The subroutine FUNC() evaluates the right-hand side of the ODE system.
 ! Given the current state U(1:6) and parameter values PAR(*), it computes
 ! the derivatives F(1:6). AUTO uses the same calling convention for every
-! problem, therefore we include inputs that are declared but not used 
+! problem, therefore we include inputs that are declared but not used
 ! (see below for details).
 !
 ! Inputs:
@@ -64,11 +65,8 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   DOUBLE PRECISION :: PP, FP, JP
 
   ! Declaration of model parameters
-  DOUBLE PRECISION :: r, a, mP, mJ
-  DOUBLE PRECISION :: bL, sL, bP, sP
-  DOUBLE PRECISION :: eL, eP, fecL, fecP, gL, gP, qL, qP
-  DOUBLE PRECISION :: cL, cP, dP, dF, dJ
-  DOUBLE PRECISION :: alphaP, alphaF, alphaJ
+  DOUBLE PRECISION :: r, a, m, b, s, e, fec, g, q, c
+  DOUBLE PRECISION :: dP, dF, dJ
   DOUBLE PRECISION :: mu, deltar, deltas, beta, toggle
   DOUBLE PRECISION :: rL, rP, aL, aP ! habitat specific 
 
@@ -86,208 +84,274 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   ! Model Parameters
   r=PAR(1)
   a=PAR(2)
-  mP=PAR(3)
-  mJ=PAR(4)
-  bL=PAR(5)
-  sL=PAR(6)
-  bP=PAR(7)
-  sP=PAR(8)
-  eL=PAR(9)
-  eP=PAR(10)
-  fecL=PAR(11)
-  fecP=PAR(12)
-  gL=PAR(13)
-  gP=PAR(14)
-  qL=PAR(15)
-  qP=PAR(16)
-  cL=PAR(17)
-  cP=PAR(18)
-  dP=PAR(19)
-  dF=PAR(20)
-  dJ=PAR(21)
-  alphaP=PAR(22)
-  alphaF=PAR(23)
-  alphaJ=PAR(24)
-  mu=PAR(28)
-  deltar=PAR(29)
-  deltas=PAR(30)
-  beta=PAR(31)
-  toggle=PAR(32)
+  m=PAR(3)
+  b=PAR(4)
+  s=PAR(5)
+  e=PAR(6)
+  fec=PAR(7)
+  g=PAR(8)
+  q=PAR(9)
+  c=PAR(10)
+  dP=PAR(11)
+  dF=PAR(12)
+  dJ=PAR(13)
+  mu=PAR(14)
+  deltar=PAR(15)
+  deltas=PAR(16)
+  beta=PAR(17)
+  toggle=PAR(18)
+  
+  ! Habitat variation
   rL = r*(1.D0 - deltar) 
   rP = r*(1.D0 + deltar)
   aP = a*(1.D0 + deltas)
   aL = a*(1.D0 - deltas)
-  F(1) = maturation(gL,JL) - (mP+mu)*PL - emig(dP,toggle,alphaP, fitPL(FL,PL,JL), &
-    & fitPP(FP,PP,JP))*PL + emig(dP,toggle,alphaP, fitPP(FP,PP,JP), fitPL(FL,PL,JL))*PP
-  F(2) = logistic(rL,bL,FL) - type3(aL,PL,FL,sL) + type1(eL*qL,FL,JL) - emig(dF,toggle,alphaF, &
-    & fitFL(FL,PL,JL), fitFP(FP,PP,JP))*FL + emig(dF,toggle,alphaF, fitFP(FP,PP,JP), &
+  
+  ! Ordinary Differential Equations (Model)
+  F(1) = maturation(g,JL) - (m+mu)*PL - emig(dP,toggle,fitPL(FL,PL,JL), &
+    & fitPP(FP,PP,JP))*PL + emig(dP,toggle,fitPP(FP,PP,JP),fitPL(FL,PL,JL))*PP
+  F(2) = logistic(rL,b,FL) - type3(aL,PL,FL,s) + type1(e*q,FL,JL) - emig(dF,toggle, &
+    & fitFL(FL,PL,JL),fitFP(FP,PP,JP))*FL + emig(dF,toggle,fitFP(FP,PP,JP), &
     & fitFL(FL,PL,JL))*FP
-  F(3) = fecL*PL - maturation(gL,JL) - mJ*JL - type1(qL,FL,JL) - type1(cL,PL,JL) - &
-    & emig(dJ,toggle,alphaJ, fitJL(PL,FL,JL), fitJP(PP,FP,JP))*JL + emig(dJ,toggle,alphaJ, &
-    & fitJP(PP,FP,JP), fitJL(PL,FL,JL))*JP
-  F(4) = maturation(gP,JP) - (mP+mu)*PP - emig(dP,toggle,alphaP, fitPP(FP,PP,JP), &
-    & fitPL(FL,PL,JL))*PP + emig(dP,toggle,alphaP, fitPL(FL,PL,JL), fitPP(FP,PP,JP))*PL
-  F(5) = logistic(rP,bP,FP) - type3(aP,PP,FP,sP) + type1(eP*qP,FP,JP) - emig(dF,toggle,alphaF, &
-    & fitFP(FP,PP,JP), fitFL(FL,PL,JL))*FP + emig(dF,toggle,alphaF, fitFL(FL,PL,JL), &
+  F(3) = fec*PL - maturation(g,JL) - m*JL - type1(q,FL,JL) - type1(c,PL,JL) - &
+    & emig(dJ,toggle,fitJL(PL,FL,JL),fitJP(PP,FP,JP))*JL + emig(dJ,toggle, &
+    & fitJP(PP,FP,JP),fitJL(PL,FL,JL))*JP
+  F(4) = maturation(g,JP) - (m+mu)*PP - emig(dP,toggle,fitPP(FP,PP,JP), &
+    & fitPL(FL,PL,JL))*PP + emig(dP,toggle,fitPL(FL,PL,JL),fitPP(FP,PP,JP))*PL
+  F(5) = logistic(rP,b,FP) - type3(aP,PP,FP,s) + type1(e*q,FP,JP) - emig(dF,toggle, &
+    & fitFP(FP,PP,JP),fitFL(FL,PL,JL))*FP + emig(dF,toggle,fitFL(FL,PL,JL), &
     & fitFP(FP,PP,JP))*FL
-  F(6) = fecP*PP - maturation(gP,JP) - mJ*JP - type1(qP,FP,JP) - type1(cP,PP,JP) - &
-    & emig(dJ,toggle,alphaJ, fitJP(PP,FP,JP), fitJL(PL,FL,JL))*JP + emig(dJ,toggle,alphaJ, &
-    & fitJL(PL,FL,JL), fitJP(PP,FP,JP))*JL
+  F(6) = fec*PP - maturation(g,JP) - m*JP - type1(q,FP,JP) - type1(c,PP,JP) - &
+    & emig(dJ,toggle,fitJP(PP,FP,JP),fitJL(PL,FL,JL))*JP + emig(dJ,toggle, &
+    & fitJL(PL,FL,JL),fitJP(PP,FP,JP))*JL
   RETURN
-CONTAINS ! the following functions are nested inside FUNC(). They can use variables from FUNC() such as 'rL' or 'aL'
+  
+CONTAINS ! The following functions are nested inside FUNC(). They can use
+         ! variables from FUNC(), such as rL or aL.
+
   DOUBLE PRECISION FUNCTION maturation(g,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: g,j
     maturation = (g*j)/(1+j*j)
   END FUNCTION maturation
+  
   DOUBLE PRECISION FUNCTION type3(a,p,f,s)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: a,p,f,s
     type3 = (a*p*f*f)/(1+s*f*f)
   END FUNCTION type3
+  
   DOUBLE PRECISION FUNCTION logistic(r,b,f)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: r,b,f
     logistic = r*f - b*f*f
   END FUNCTION logistic
+  
   DOUBLE PRECISION FUNCTION sig(a)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: a
     sig = 1/(1+exp(-a))
   END FUNCTION sig
+  
   DOUBLE PRECISION FUNCTION type1(a,x,y)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: a,x,y
     type1 = a*x*y
   END FUNCTION type1
+  
+  ! Fitness Equations
   DOUBLE PRECISION FUNCTION fitPL(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
     fitPL = 0
   END FUNCTION fitPL
+  
   DOUBLE PRECISION FUNCTION fitPP(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
     fitPP = 0
   END FUNCTION fitPP
+  
   DOUBLE PRECISION FUNCTION fitFL(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
-    fitFL = LOG(MAX(EXP((rL - bL*f) - (aL*p*f)/(1 + sL*f*f) + eL*qL*j), payoff_floor))
+    fitFL = LOG(MAX(EXP((rL - b*f) - (aL*p*f)/(1 + s*f*f) + e*q*j), payoff_floor))
   END FUNCTION fitFL
+  
   DOUBLE PRECISION FUNCTION fitFP(f,p,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: f,p,j
-    fitFP = LOG(MAX(EXP((rP - bP*f) - (aP*p*f)/(1 + sP*f*f) + eP*qP*j), payoff_floor))
+    fitFP = LOG(MAX(EXP((rP - b*f) - (aP*p*f)/(1 + s*f*f) + e*q*j), payoff_floor))
   END FUNCTION fitFP
+  
   DOUBLE PRECISION FUNCTION fitJL(p,f,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: p,f,j
-    fitJL = LOG(MAX(gL/(1 + j*j), payoff_floor) / MAX(mJ + qL*f + cL*p, payoff_floor))
+    fitJL = LOG(MAX(g/(1 + j*j), payoff_floor) / MAX(m + q*f + c*p, payoff_floor))
   END FUNCTION fitJL
+  
   DOUBLE PRECISION FUNCTION fitJP(p,f,j)
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(IN) :: p,f,j
-    fitJP = LOG(MAX(gP/(1 + j*j), payoff_floor) / MAX(mJ + qP*f + cP*p, payoff_floor))
+    fitJP = LOG(MAX(g/(1 + j*j), payoff_floor) / MAX(m + q*f + c*p, payoff_floor))
   END FUNCTION fitJP
-  DOUBLE PRECISION FUNCTION emig(d,toggle,alpha,win,wout)
+  
+  DOUBLE PRECISION FUNCTION emig(d,toggle,win,wout)
     IMPLICIT NONE
-    DOUBLE PRECISION, INTENT(IN) :: d,toggle,alpha,win,wout
-    emig = toggle*d*(sig(beta*alpha*(wout - win)))
+    DOUBLE PRECISION, INTENT(IN) :: d,toggle,win,wout
+    emig = toggle*d*sig(beta*(wout - win))
   END FUNCTION emig
+ 
 END SUBROUTINE FUNC
 
-! AUTO calls this subroutine to initialize the model. It does three things:
-! 1. Reads optional parameters from experiment_parameters.dat. 
-! 2. Sets defaults parameter values.
-! 3. Computes a reasonable initial equilibrium.
+! ----------------------------------------------------------------------------------
+
+! The subroutine STPNT() supplies AUTO with the parameter values and state
+! variables from which continuation begins. 
+!
+! Inputs:
+! NDIM - Number of state variables in the ODE system. For this model,
+!        NDIM = 6.
+!
+! T    - Time supplied by AUTO. The model is autonomous, so STPNT receives T
+!        but does not use it.
+!
+! Inputs / outputs:
+! PAR  - Model parameter vector. STPNT assigns the default values PAR(1:18).
+!
+! Outputs:
+! U    - Initial equilibrium state returned to AUTO:
+!        U(1) = PL = 0, predator in littoral habitat
+!        U(2) = FL, equilibrium forager density in littoral habitat
+!        U(3) = JL = 0, juvenile in littoral habitat
+!        U(4) = PP = 0, predator in pelagic habitat
+!        U(5) = FP, equilibrium forager density in pelagic habitat
+!        U(6) = JP = 0, juvenile in pelagic habitat
+
 
 SUBROUTINE STPNT(NDIM,U,PAR,T) 
+  ! Overrides the default implicit typing rules for names.
   IMPLICIT NONE
+
+  ! Declaration of inputs / outputs
   INTEGER, INTENT(IN) :: NDIM
   DOUBLE PRECISION, INTENT(OUT) :: U(NDIM)
   DOUBLE PRECISION, INTENT(INOUT) :: PAR(*)
   DOUBLE PRECISION, INTENT(IN) :: T
-  DOUBLE PRECISION :: input_deltar,input_deltas
+
+  ! Values read from experiment_parameters.dat - this is a temporary output file 
+  DOUBLE PRECISION :: input_deltar,input_deltas,input_movement
+
+  ! Newton and Jocobian variables
   DOUBLE PRECISION :: x,y,h,f1,f2,f1x,f2x,f1y,f2y,j11,j12,j21,j22,det,dx,dy
   DOUBLE PRECISION :: rL,rP,fitL,fitP,emigLP,emigPL
   INTEGER :: iter,ios
+  CHARACTER(LEN=256) :: input_line
 
+  ! Initialize optional inputs before attempting to read the parameter file.
   input_deltar=0.D0
   input_deltas=0.D0
+  input_movement=-1.D0 ! A negative movement value indicates that the default rates should be kept.
+
+
+  ! Attempts to open the file 'experiment_parameters.dat" (temporary file)
+  ! STATUS = 'OLD' : requires the file to already exist
+  ! IOSTAT=ios : prevents a missing file from immediately terminating the program
   OPEN(99,FILE='experiment_parameters.dat',STATUS='OLD',IOSTAT=ios)
   IF (ios.EQ.0) THEN
-    READ(99,*) input_deltar,input_deltas
+    READ(99,'(A)',IOSTAT=ios) input_line
     CLOSE(99)
+    IF (ios.EQ.0) THEN
+      READ(input_line,*,IOSTAT=ios) input_deltar,input_deltas,input_movement
+      IF (ios.NE.0) THEN
+        input_movement=-1.D0 ! 
+        READ(input_line,*) input_deltar,input_deltas
+      END IF
+    END IF
   END IF
 
-  PAR(1:40)=0.D0
-  PAR(1)=4.0000000000000002D-01
-  PAR(2)=5.0000000000000003D-02
-  PAR(3)=1.0000000000000001D-01
-  PAR(4)=1.0000000000000001D-01
-  PAR(5)=5.9999999999999998D-02
-  PAR(6)=5.0000000000000001D-03
-  PAR(7)=5.9999999999999998D-02
-  PAR(8)=5.0000000000000001D-03
-  PAR(9)=1.0000000000000001D-01
-  PAR(10)=1.0000000000000001D-01
-  PAR(11)=1.0000000000000000D+00
-  PAR(12)=1.0000000000000000D+00
-  PAR(13)=3.0000000000000001D-01 
-  PAR(14)=3.0000000000000001D-01
-  PAR(15)=1.5000000000000001D-01
-  PAR(16)=1.5000000000000001D-01
-  PAR(17)=2.0000000000000000D-02
-  PAR(18)=2.0000000000000000D-02
-  PAR(19)=0.6000000000000001D-00
-  PAR(20)=0.6000000000000001D-00
-  PAR(21)=0.6000000000000001D-00
-  PAR(22)=2.5000000000000000D-01
-  PAR(23)=2.5000000000000000D-01
-  PAR(24)=2.5000000000000000D-01
-  PAR(25)=1.0000000000000000D-02
-  PAR(26)=1.0000000000000000D-02
-  PAR(27)=1.0000000000000000D-02
-  PAR(28)=0.0000000000000000D+00
-  PAR(29)=0.0000000000000000D+00
-  PAR(30)=0.0000000000000000D+00
-  PAR(31)=1.0000000000000000D+00
-  PAR(32)=1.0000000000000000D+00
+  ! Default model parameters
+  PAR(1)  = 0.40D0    ! r       | 0.40  | intrinsic growth rate for forager 
+  PAR(2)  = 0.05D0    ! a       | 0.05  | baseline predator attack-rate coefficient
+  PAR(3)  = 0.10D0    ! m       | 0.10  | mortality rate
+  PAR(4)  = 0.06D0    ! b       | 0.06  | forager density-dependence coefficient
+  PAR(5)  = 0.005D0   ! s       | 0.005 | predation saturation coefficient
+  PAR(6)  = 0.10D0    ! e       | 0.10  | forager conversion efficiency
+  PAR(7)  = 1.00D0    ! fec     | 1.00  | predator fecundity
+  PAR(8)  = 0.30D0    ! g       | 0.30  | maximum juvenile maturation rate
+  PAR(9)  = 0.15D0    ! q       | 0.15  | juvenile-forager interaction rate
+  PAR(10) = 0.02D0    ! c       | 0.02  | juvenile-predator interaction rate
+  PAR(11) = 0.50D0    ! dP      | 1.00  | predator dispersal rate
+  PAR(12) = 0.50D0    ! dF      | 1.00  | forager dispersal rate
+  PAR(13) = 0.50D0    ! dJ      | 1.00  | juvenile dispersal rate
+  PAR(14) = 0.00D0    ! mu      | 0.00  | fishing effort 
+  PAR(15) = 0.00D0    ! deltar  | 0.00  | variation in productivity
+  PAR(16) = 0.00D0    ! deltas  | 0.00  | variation in attack rate
+  PAR(17) = 0.25D0    ! beta    | 0.25  | combined movement fitness sensitivity
+  PAR(18) = 1.00D0    ! toggle  | 1 (on)| enable movement; 1 (on) and 0 (off)
 
-  IF (ABS(input_deltar).GT.1.0D-14) PAR(29)=input_deltar
-  IF (ABS(input_deltas).GT.1.0D-14) PAR(30)=input_deltas
+  ! Copies the file's producitivty contrast into PAR(15) and PAR(16) respectively
+  ! but only if its magnitude exceeds 10e-14. 
+  IF (ABS(input_deltar).GT.1.0D-14) PAR(15)=input_deltar
+  IF (ABS(input_deltas).GT.1.0D-14) PAR(16)=input_deltas
+  IF (input_movement.GE.0.D0) THEN !Checks whether a valid movement override was supplied.
+  ! Read optional experiment settings from the temporary parameter file.
+  ! First try the current three-value format: deltar, deltas, movement.
+  ! If only two values are present, set movement to -1, meaning “not specified.”
+  ! A missing file also leaves movement at -1, so the default rates are kept.
+    PAR(11)=input_movement
+    PAR(12)=input_movement
+    PAR(13)=input_movement
+  END IF
 
-  U(1:NDIM)=0.D0
-  rL=PAR(1)*(1.D0-PAR(29))
-  rP=PAR(1)*(1.D0+PAR(29))
-  x=MAX(rL/PAR(5),1.0D-8)
-  y=MAX(rP/PAR(7),1.0D-8)
-  h=1.0D-6
+  ! Set predators and juveniles to zero, then initialize the two forager
+  ! densities at their habitat-specific carrying capacities. These values
+  ! are the exact predator-free equilibrium when net movement is zero and
+  ! provide the initial guess for the coupled equilibrium otherwise.
+  U(1:NDIM)=0.D0 ! Sets every state variable to zero
+  rL=PAR(1)*(1.D0-PAR(15)) ! computes littoral intrinsic growth
+  rP=PAR(1)*(1.D0+PAR(15)) ! computes pelagic intrinsic growth
+  x=MAX(rL/PAR(4),1.0D-8)  ! initializes littoral density using the sinle-habitat positive logistic equilibrium
+  y=MAX(rP/PAR(4),1.0D-8)  ! initializes pelagic density using the sinle-habitat positive logistic equilibrium
+  h=1.0D-6 ! Sets the forward finite-difference increment used to estimate the Jacobian
 
+  ! NEWTON ITERATION
+  ! Begins a loop of at most 30 Newton iterations
   DO iter=1,30
-    fitL=rL-PAR(5)*x
-    fitP=rP-PAR(7)*y
-    emigLP=PAR(20)*PAR(32)/(1.D0+EXP(-PAR(31)*PAR(23)*(fitP-fitL)))
-    emigPL=PAR(20)*PAR(32)/(1.D0+EXP(-PAR(31)*PAR(23)*(fitL-fitP)))
-    f1=rL*x-PAR(5)*x*x-emigLP*x+emigPL*y
-    f2=rP*y-PAR(7)*y*y-emigPL*y+emigLP*x
-    IF (MAX(ABS(f1),ABS(f2)).LT.1.0D-12) EXIT
+    ! Computes simplified littoral forager per-capita growth 
+    fitL=rL-PAR(4)*x 
+    fitP=rP-PAR(4)*y
+    ! Computes the per-capita movement rate
+    emigLP=PAR(12)*PAR(18)/(1.D0+EXP(-PAR(17)*(fitP-fitL)))
+    emigPL=PAR(12)*PAR(18)/(1.D0+EXP(-PAR(17)*(fitL-fitP)))
+    ! Computes residuals
+    f1=rL*x-PAR(4)*x*x-emigLP*x+emigPL*y
+    f2=rP*y-PAR(4)*y*y-emigPL*y+emigLP*x
+    IF (MAX(ABS(f1),ABS(f2)).LT.1.0D-12) EXIT ! tests residual convergence using the infinity norm
+    
+    ! Slightly perturb each density to estimate how both residuals respond.
+    ! These finite-difference slopes form the Jacobian used by Newton’s method.
 
-    fitL=rL-PAR(5)*(x+h)
-    fitP=rP-PAR(7)*y
-    emigLP=PAR(20)*PAR(32)/(1.D0+EXP(-PAR(31)*PAR(23)*(fitP-fitL)))
-    emigPL=PAR(20)*PAR(32)/(1.D0+EXP(-PAR(31)*PAR(23)*(fitL-fitP)))
-    f1x=rL*(x+h)-PAR(5)*(x+h)*(x+h)-emigLP*(x+h)+emigPL*y
-    f2x=rP*y-PAR(7)*y*y-emigPL*y+emigLP*(x+h)
+    ! Perturb the littoral density
+    fitL=rL-PAR(4)*(x+h)
+    fitP=rP-PAR(4)*y
+    emigLP=PAR(12)*PAR(18)/(1.D0+EXP(-PAR(17)*(fitP-fitL)))
+    emigPL=PAR(12)*PAR(18)/(1.D0+EXP(-PAR(17)*(fitL-fitP)))
+    f1x=rL*(x+h)-PAR(4)*(x+h)*(x+h)-emigLP*(x+h)+emigPL*y
+    f2x=rP*y-PAR(4)*y*y-emigPL*y+emigLP*(x+h)
 
-    fitL=rL-PAR(5)*x
-    fitP=rP-PAR(7)*(y+h)
-    emigLP=PAR(20)*PAR(32)/(1.D0+EXP(-PAR(31)*PAR(23)*(fitP-fitL)))
-    emigPL=PAR(20)*PAR(32)/(1.D0+EXP(-PAR(31)*PAR(23)*(fitL-fitP)))
-    f1y=rL*x-PAR(5)*x*x-emigLP*x+emigPL*(y+h)
-    f2y=rP*(y+h)-PAR(7)*(y+h)*(y+h)-emigPL*(y+h)+emigLP*x
+    ! Perturb the pelagic density
+    fitL=rL-PAR(4)*x
+    fitP=rP-PAR(4)*(y+h)
+    emigLP=PAR(12)*PAR(18)/(1.D0+EXP(-PAR(17)*(fitP-fitL)))
+    emigPL=PAR(12)*PAR(18)/(1.D0+EXP(-PAR(17)*(fitL-fitP)))
+    f1y=rL*x-PAR(4)*x*x-emigLP*x+emigPL*(y+h)
+    f2y=rP*(y+h)-PAR(4)*(y+h)*(y+h)-emigPL*(y+h)+emigLP*x
 
+    ! Use the estimated Jacobian to calculate density corrections that move
+    ! both residuals toward zero, then repeat until the equilibrium is accurate.
+
+    ! Jacobian 
     j11=(f1x-f1)/h
     j21=(f2x-f2)/h
     j12=(f1y-f1)/h
@@ -301,14 +365,13 @@ SUBROUTINE STPNT(NDIM,U,PAR,T)
     IF (MAX(ABS(dx),ABS(dy)).LT.1.0D-12) EXIT
   END DO
 
-  U(1)=0.D0
+  ! Store the converged forager densities in AUTO's state vector. All other
+  ! state variables remain zero from the initialization above.
   U(2)=x
-  U(3)=0.D0
-  U(4)=0.D0
   U(5)=y
-  U(6)=0.D0
 END SUBROUTINE STPNT
 
+! declared but not used (see 'c.common_model' for details)
 SUBROUTINE BCND(NDIM,PAR,ICP,NBC,U0,U1,FB,IJAC,DBC)
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NDIM,NBC,IJAC
@@ -319,6 +382,7 @@ SUBROUTINE BCND(NDIM,PAR,ICP,NBC,U0,U1,FB,IJAC,DBC)
   DOUBLE PRECISION, INTENT(INOUT) :: DBC(*)
 END SUBROUTINE BCND
 
+! declared but not used (see 'c.common_model' for details)
 SUBROUTINE ICND(NDIM,PAR,ICP,NINT,U,UOLD,UDOT,UPOLD,FI,IJAC,DINT)
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NDIM,NINT,IJAC
@@ -329,6 +393,7 @@ SUBROUTINE ICND(NDIM,PAR,ICP,NINT,U,UOLD,UDOT,UPOLD,FI,IJAC,DINT)
   DOUBLE PRECISION, INTENT(INOUT) :: DINT(*)
 END SUBROUTINE ICND
 
+! declared but not used (see 'c.common_model' for details)
 SUBROUTINE FOPT(NDIM,U,ICP,PAR,IJAC,FS,DFDU,DFDP)
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NDIM,IJAC
@@ -339,6 +404,7 @@ SUBROUTINE FOPT(NDIM,U,ICP,PAR,IJAC,FS,DFDU,DFDP)
   DOUBLE PRECISION, INTENT(INOUT) :: DFDU(*),DFDP(*)
 END SUBROUTINE FOPT
 
+! declared but not used (see 'c.common_model' for details)
 SUBROUTINE PVLS(NDIM,U,PAR)
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: NDIM
