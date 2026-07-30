@@ -1,58 +1,33 @@
-# Fitness-Dependent Movement
-
-## Table of contents
-
-1. [Project overview](#project-overview)
-2. [Repository contents](#repository-contents)
-3. [Installation](#installation)
-4. [Running the experiments](#running-the-experiments)
-5. [Important simulation variables, parameters, and settings](#important-simulation-variables-parameters-and-settings)
-6. [License](#license)
-7. [References](#references)
-
-## Project overview
-
-This repository contains a two-patch tri-trophic model analyzed with AUTO-07p.
-The model describes predators, foragers, and juveniles in littoral and pelagic
-habitats.
-
-The scripts are launched from Jupyter notebooks inside an AUTO-Docker container.
-
-## Repository contents
+# Repository contents
 
 | File or folder | Description |
 | --- | --- |
-| `common_model.f90` | Defines the six-dimensional ODE model and the AUTO starting point. |
+| `output/` | Contains generated figures. |
 | `c.common_model` | Defines the default AUTO continuation settings. |
-| `plot_3x3.py` | Applies the shared formatting for the three 3-by-3 codimension-2 plots. |
-| `experiment_1_productivity.ipynb` | Runs the productivity analysis. |
-| `experiment_2_attack_rate.ipynb` | Runs the attack-rate analysis. |
-| `experiment_3_fitness_dependent_movement.ipynb` | Runs the fitness-dependent movement analysis. |
+| `common_model.f90` | Defines the ODE model and the AUTO starting point. |
+| `experiment_1_productivity.ipynb` | Runs the variation in productivity simulation |
+| `experiment_2_attack_rate.ipynb` | Runs the variation in attack-rate simulation. |
+| `experiment_3_fitness_dependent_movement.ipynb` | Runs the sensitivity to fitness-dependent movement simulation |
+| `plot_3x3.py` | Output figures graphics settings |
 | `run_all_experiments.ipynb` | Runs the main experiments from a single notebook. |
-| `movement_tests.py` | Tests movement and fitness calculations independently of AUTO. |
-| `Extra_Experiments/` | Contains supplementary analyses. |
-| `output/` | Contains generated figures and analysis outputs. |
 
 > **Note:** AUTO may generate working files named `fort.*`, `b.*`, `s.*`, and
 > `d.*`. These are intermediate outputs and should be automatically deleted
 > once the script finishes running.
 
-## Installation
-
-### Prerequisites
+# Required Software
 
 - [Docker Desktop](https://docs.docker.com/desktop/)
 - [Git](https://git-scm.com/downloads/)
 
-No separate installation of Python, Jupyter, or AUTO-07p is required.
-AUTOdocker provides these dependencies inside a Docker container.
+AUTOdocker packages AUTO and its required software inside the container and
+launches Jupyter itself. 
 
-### Apple Silicon macOS
+# Installation
 
-The following commands perform a clean installation on a Mac with an Apple
-Silicon processor (M1 or newer). Run the complete block in Terminal:
+Run the following complete block in Terminal (MAC OS): 
 
-```bash
+```
 cd "$HOME"
 open -a Docker
 
@@ -69,46 +44,27 @@ until docker info >/dev/null 2>&1; do sleep 2; done
 docker compose up
 ```
 
-The first launch may take several minutes while Docker downloads the AUTOdocker
-image. When Jupyter is ready, Terminal displays a URL similar to:
+These commands:
 
-```text
-http://127.0.0.1:8888/tree?token=...
-```
+1. Start Docker Desktop.
+2. Download AUTOdocker and the `fitness-movement` repository.
+3. Configure the Apple Silicon container to use the repository as its Jupyter workspace.
+4. Wait for Docker to become available.
+5. Start the AUTO-07p container and display the Jupyter access URL.
 
-Open this URL in a browser. Jupyter starts in the `fitness-movement` repository,
-which is mounted inside the container as `/auto/workspace`.
 
-Keep the Terminal window open while using Jupyter. Press <kbd>Control</kbd> +
-<kbd>C</kbd> to stop the container.
+# Running the experiments
 
-### Subsequent launches
-
-After the initial installation, start the environment with:
-
-```bash
-cd "$HOME/fitness-movement"
-open -a Docker
-until docker info >/dev/null 2>&1; do sleep 2; done
-docker compose up
-```
-
-Files created in the repository, including files written to `output/`, remain
-available after the container stops.
-
-## Running the experiments
+The scripts are launched from Jupyter notebooks inside an AUTO-Docker container.
 
 1. Open `run_all_experiments.ipynb`.
 2. Confirm that the notebook working directory is the repository root.
 3. Select **Run All Cells**.
 4. Review the generated files in the `output/` directory.
 
-Alternatively, you can run each experiment individually by selecting
-**Run All Cells** in its respective Jupyter notebook.
+# Important simulation variables, parameters, and settings
 
-## Important simulation variables, parameters, and settings
-
-### Model parameters
+## Model parameters
 
 | PAR | Name | Default | Meaning |
 | ---: | --- | ---: | --- |
@@ -137,7 +93,7 @@ Alternatively, you can run each experiment individually by selecting
 > - The defaults are assigned in `STPNT` in `common_model.f90`.
 > - Parameter numbers are the indices used by AUTO (`PAR`).
 
-### Habitat-specific values
+## Habitat-specific values
 
 | Expression | Meaning |
 | --- | --- |
@@ -146,7 +102,7 @@ Alternatively, you can run each experiment individually by selecting
 | `aL = a(1 - deltas)` | Littoral attack rate |
 | `aP = a(1 + deltas)` | Pelagic attack rate |
 
-### Important AUTO continuation settings
+## Important AUTO continuation settings
 
 | Setting | Shared value | Purpose |
 | --- | --- | --- |
@@ -158,7 +114,7 @@ Alternatively, you can run each experiment individually by selecting
 
 The shared defaults are defined in `c.common_model`.
 
-### Experiment settings
+## Experiment settings
 
 | Experiment | Driver (PAR) | Range | Fixed contrasts |
 | --- | --- | --- | --- |
@@ -168,8 +124,16 @@ The shared defaults are defined in `c.common_model`.
 
 Unless specified in the **Fixed contrasts** column, all variables are fixed.
 
-## License
+## MIT License (MIT)
 
-## References
+Copyright © 2026 Tristan Kolla
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# References
 
 - [AUTO-07p Manual](https://tinyurl.com/45449y9r)
