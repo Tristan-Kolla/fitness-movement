@@ -20,9 +20,6 @@
 - [Docker Desktop](https://docs.docker.com/desktop/)
 - [Git](https://git-scm.com/downloads/)
 
-AUTOdocker packages AUTO and its required software inside the container and
-launches Jupyter itself. 
-
 # Installation
 
 Run the following complete block in Terminal (MAC OS): 
