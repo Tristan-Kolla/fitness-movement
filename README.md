@@ -39,44 +39,62 @@ The scripts are launched from Jupyter notebooks inside an AUTO-Docker container.
 
 ## Installation
 
-### Required software
+### Prerequisites
 
 - [Docker Desktop](https://docs.docker.com/desktop/)
 - [Git](https://git-scm.com/downloads/)
 
-AUTOdocker packages AUTO and its required software inside the container and
-launches Jupyter itself.
+No separate installation of Python, Jupyter, or AUTO-07p is required.
+AUTOdocker provides these dependencies inside a Docker container.
 
-### 1. Install AUTOdocker
+### Apple Silicon macOS
 
-Follow the installation instructions in the
-[AUTOdocker repository](https://github.com/rhparker/AUTOdocker).
+The following commands perform a clean installation on a Mac with an Apple
+Silicon processor (M1 or newer). Run the complete block in Terminal:
 
-### 2. Download this repository
+```bash
+cd "$HOME"
+open -a Docker
 
-```sh
+git clone --depth 1 https://github.com/rhparker/AUTOdocker.git
 git clone https://github.com/Tristan-Kolla/fitness-movement.git
+
+cp AUTOdocker/docker-compose-arm.yml fitness-movement/docker-compose.yml
+printf 'services:\n  auto:\n    working_dir: /auto/workspace\n' \
+  > fitness-movement/docker-compose.override.yml
+
 cd fitness-movement
-```
 
-Alternatively, you can download the repository as a ZIP file from the
-[fitness-movement repository](https://github.com/Tristan-Kolla/fitness-movement).
-
-### 3. Connect the repository to AUTOdocker
-
-Copy the appropriate AUTOdocker Compose file into the root directory of this
-repository. If using `docker-compose-arm.yml`, rename the copied file to
-`docker-compose.yml`.
-
-From the repository root, start AUTOdocker:
-
-```sh
+until docker info >/dev/null 2>&1; do sleep 2; done
 docker compose up
 ```
 
-The repository root is mounted as `/auto/workspace` in the container. Open that
-directory in Jupyter before running the notebooks. Files written to `output/`
-are retained in the local repository after the container stops.
+The first launch may take several minutes while Docker downloads the AUTOdocker
+image. When Jupyter is ready, Terminal displays a URL similar to:
+
+```text
+http://127.0.0.1:8888/tree?token=...
+```
+
+Open this URL in a browser. Jupyter starts in the `fitness-movement` repository,
+which is mounted inside the container as `/auto/workspace`.
+
+Keep the Terminal window open while using Jupyter. Press <kbd>Control</kbd> +
+<kbd>C</kbd> to stop the container.
+
+### Subsequent launches
+
+After the initial installation, start the environment with:
+
+```bash
+cd "$HOME/fitness-movement"
+open -a Docker
+until docker info >/dev/null 2>&1; do sleep 2; done
+docker compose up
+```
+
+Files created in the repository, including files written to `output/`, remain
+available after the container stops.
 
 ## Running the experiments
 

@@ -46,6 +46,44 @@ PLOT_SETTINGS = {
 
 # ------------------------------------------------------------------------------------------------------------
 
+def _validate_curve(curve, driver_name, driver_limits, curve_name):
+    """Reject abnormal or incomplete AUTO continuation results."""
+    if len(curve("MX")) > 0:
+        raise RuntimeError(f"{curve_name} ended abnormally at an AUTO MX point.")
+
+    values = [
+        float(value)
+        for branch in curve
+        for value in branch[driver_name]
+    ]
+    if not values:
+        raise RuntimeError(f"{curve_name} contains no continuation points.")
+
+    observed_min = min(values)
+    observed_max = max(values)
+    stops = [float(branch[driver_name][0]) for branch in curve]
+    stops += [float(point[driver_name]) for point in curve("UZ")]
+
+    for endpoint in driver_limits:
+        tolerance = 1.0e-6 * max(1.0, abs(endpoint))
+        if endpoint < observed_min - tolerance or endpoint > observed_max + tolerance:
+            raise RuntimeError(
+                f"{curve_name} did not reach the requested {driver_name} "
+                f"endpoint {endpoint:g}."
+            )
+        if (
+            observed_min < endpoint - tolerance
+            and observed_max > endpoint + tolerance
+        ):
+            continue
+        if not any(abs(value - endpoint) <= tolerance for value in stops):
+            raise RuntimeError(
+                f"{curve_name} reached {driver_name}={endpoint:g} without "
+                "a starting point or successful AUTO UZ stop."
+            )
+
+# ------------------------------------------------------------------------------------------------------------
+
 # INPUT:
 # equilibrium : an iterable AUTO continuation result. Each branch must provide:
 #               branch["mu"] = fishing-effort values
@@ -102,6 +140,15 @@ def save_3x3_plot(panels, experiment, output_folder, save_svg=False):
     
     settings = PLOT_SETTINGS[experiment]
     driver_name = settings["driver_name"]
+
+    # Do not turn abnormal or partial continuations into finished figures.
+    for panel in panels:
+        movement_rate = panel["movement_rate"]
+        for curve_name, label in (("bp_curve", "BP"), ("lp_curve", "LP")):
+            _validate_curve(
+                panel[curve_name], driver_name, settings["x_limits"],
+                f"{label} curve at movement rate {movement_rate:g}",
+            )
 
     # Create nine plotting axes arranged in three rows and three columns.
     figure, axes = plt.subplots(

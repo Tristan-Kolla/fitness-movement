@@ -92,7 +92,7 @@ SUBROUTINE FUNC(NDIM,U,ICP,PAR,IJAC,F,DFDU,DFDP)
   g=PAR(8)
   q=PAR(9)
   c=PAR(10)
-  dP=PAR(11)
+  dP=PAR(19)
   dF=PAR(12)
   dJ=PAR(13)
   mu=PAR(14)
@@ -281,14 +281,15 @@ SUBROUTINE STPNT(NDIM,U,PAR,T)
   PAR(8)  = 0.30D0    ! g       | 0.30  | maximum juvenile maturation rate
   PAR(9)  = 0.15D0    ! q       | 0.15  | juvenile-forager interaction rate
   PAR(10) = 0.02D0    ! c       | 0.02  | juvenile-predator interaction rate
-  PAR(11) = 0.50D0    ! dP      | 1.00  | predator dispersal rate
-  PAR(12) = 0.50D0    ! dF      | 1.00  | forager dispersal rate
-  PAR(13) = 0.50D0    ! dJ      | 1.00  | juvenile dispersal rate
+  PAR(11) = 0.00D0    ! Reserved for AUTO-07p
+  PAR(12) = 0.50D0    ! dF      | 0.50  | forager dispersal rate
+  PAR(13) = 0.50D0    ! dJ      | 0.50  | juvenile dispersal rate
   PAR(14) = 0.00D0    ! mu      | 0.00  | fishing effort 
   PAR(15) = 0.00D0    ! deltar  | 0.00  | variation in productivity
   PAR(16) = 0.00D0    ! deltas  | 0.00  | variation in attack rate
   PAR(17) = 0.25D0    ! beta    | 0.25  | combined movement fitness sensitivity
   PAR(18) = 1.00D0    ! toggle  | 1 (on)| enable movement; 1 (on) and 0 (off)
+  PAR(19) = 0.50D0    ! dP      | 0.50  | predator dispersal rate
 
   ! Copies the file's producitivty contrast into PAR(15) and PAR(16) respectively
   ! but only if its magnitude exceeds 10e-14. 
@@ -299,7 +300,7 @@ SUBROUTINE STPNT(NDIM,U,PAR,T)
   ! First try the current three-value format: deltar, deltas, movement.
   ! If only two values are present, set movement to -1, meaning “not specified.”
   ! A missing file also leaves movement at -1, so the default rates are kept.
-    PAR(11)=input_movement
+    PAR(19)=input_movement
     PAR(12)=input_movement
     PAR(13)=input_movement
   END IF

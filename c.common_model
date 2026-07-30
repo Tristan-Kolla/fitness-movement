@@ -5,7 +5,7 @@
 #----------------           -----------
 e = 'common_model'          # File name
 NDIM = 6                    # Number of dimensions
-NPAR = 18                   # Number of parameters
+NPAR = 19                   # Number of parameters
 IPS = 1                     # Stationary solutions of ODEs with detection of Hopf bifurcations.
 IRS = 0                     # This constant sets the label of the solution where the computation is to be restarted. 
 ILP = 1                     # Detection of folds. To be used if subsequent fold continuation is intended
@@ -43,5 +43,5 @@ SP = ['BP', 'LP', 'HB']     # Detect branch points, folds, and Hopf bifurcations
 STOP = []                   # Do not stop at any numbered bifurcation.
 
 # Changes the names in all output. Allows us to refer to these strings instead of the corresponding indices. 
-parnames = {1: 'r', 2: 'a', 3: 'm', 4: 'b', 5: 's', 6: 'e', 7: 'fec', 8: 'g', 9: 'q', 10: 'c', 11: 'dP', 12: 'dF', 13: 'dJ', 14: 'mu', 15: 'deltar', 16: 'deltas', 17: 'beta', 18: 'toggle'}
+parnames = {1: 'r', 2: 'a', 3: 'm', 4: 'b', 5: 's', 6: 'e', 7: 'fec', 8: 'g', 9: 'q', 10: 'c', 12: 'dF', 13: 'dJ', 14: 'mu', 15: 'deltar', 16: 'deltas', 17: 'beta', 18: 'toggle', 19: 'dP'}
 unames = {1: 'PL', 2: 'FL', 3: 'JL', 4: 'PP', 5: 'FP', 6: 'JP'}
