@@ -5,54 +5,18 @@
 | `output/` | Contains generated figures. |
 | `c.common_model` | Defines the default AUTO continuation settings. |
 | `common_model.f90` | Defines the ODE model and the AUTO starting point. |
-| `experiment_1_productivity.ipynb` | Runs the variation in productivity simulation |
-| `experiment_2_attack_rate.ipynb` | Runs the variation in attack-rate simulation. |
-| `experiment_3_fitness_dependent_movement.ipynb` | Runs the sensitivity to fitness-dependent movement simulation |
-| `plot_3x3.py` | Output figures graphics settings |
 | `run_all_experiments.ipynb` | Runs the main experiments from a single notebook. |
 
-> **Note:** AUTO may generate working files named `fort.*`, `b.*`, `s.*`, and
-> `d.*`. These are intermediate outputs and should be automatically deleted
-> once the script finishes running.
+> **Note:** AUTO may generate working files named `fort.*`, `b.*`, `s.*`, and `d.*`. 
 
 # Required Software
 
 - [Docker Desktop](https://docs.docker.com/desktop/)
 - [Git](https://git-scm.com/downloads/)
 
-# Installation
-
-Run the following complete block in Terminal (MAC OS): 
-
-```
-cd "$HOME"
-open -a Docker
-
-git clone --depth 1 https://github.com/rhparker/AUTOdocker.git
-git clone https://github.com/Tristan-Kolla/fitness-movement.git
-
-cp AUTOdocker/docker-compose-arm.yml fitness-movement/docker-compose.yml
-printf 'services:\n  auto:\n    working_dir: /auto/workspace\n' \
-  > fitness-movement/docker-compose.override.yml
-
-cd fitness-movement
-
-until docker info >/dev/null 2>&1; do sleep 2; done
-docker compose up
-```
-
-These commands:
-
-1. Start Docker Desktop.
-2. Download AUTOdocker and the `fitness-movement` repository.
-3. Configure the Apple Silicon container to use the repository as its Jupyter workspace.
-4. Wait for Docker to become available.
-5. Start the AUTO-07p container and display the Jupyter access URL.
-
-
 # Running the experiments
 
-The scripts are launched from Jupyter notebooks inside an AUTO-Docker container.
+The experiments are launched from a Jupyter notebook inside an AUTO-Docker container.
 
 1. Open `run_all_experiments.ipynb`.
 2. Confirm that the notebook working directory is the repository root.
@@ -76,32 +40,24 @@ The scripts are launched from Jupyter notebooks inside an AUTO-Docker container.
 | 9 | `q` | 0.15 | Juvenile-forager interaction rate |
 | 10 | `c` | 0.02 | Juvenile-predator interaction rate |
 | 11 | — | — | Reserved for AUTO |
-| 12 | `dF` | 0.50 | Forager movement rate |
-| 13 | `dJ` | 0.50 | Juvenile movement rate |
+| 12 | `dF` | 10.00 | Forager movement rate |
+| 13 | `dJ` | 10.00 | Juvenile movement rate |
 | 14 | `mu` | 0.00 | Fishing effort; principal continuation parameter |
 | 15 | `deltar` | 0.00 | Productivity contrast between habitats |
-| 16 | `deltas` | 0.00 | Attack-rate contrast between habitats |
+| 16 | `deltas` | 0.00 | Consumption contrast between habitats (scales `a`, `q`, and `c`) |
 | 17 | `beta` | 0.25 | Sensitivity of movement to the fitness difference |
 | 18 | `toggle` | 1.00 | Movement switch: 1 = on and 0 = off |
-| 19 | `dP` | 0.50 | Predator movement rate |
+| 19 | `dP` | 10.00 | Predator movement rate |
 
 > **Notes:**
 >
 > - The defaults are assigned in `STPNT` in `common_model.f90`.
 > - Parameter numbers are the indices used by AUTO (`PAR`).
 
-## Habitat-specific values
-
-| Expression | Meaning |
-| --- | --- |
-| `rL = r(1 - deltar)` | Littoral growth rate |
-| `rP = r(1 + deltar)` | Pelagic growth rate |
-| `aL = a(1 - deltas)` | Littoral attack rate |
-| `aP = a(1 + deltas)` | Pelagic attack rate |
 
 ## Important AUTO continuation settings
 
-| Setting | Shared value | Purpose |
+| Setting | Default value | Purpose |
 | --- | --- | --- |
 | `ICP` | 14 | Initially continue fishing effort, `mu` |
 | `DS` | `5e-4` | Initial pseudo-arclength step size |
@@ -109,17 +65,17 @@ The scripts are launched from Jupyter notebooks inside an AUTO-Docker container.
 | `NMX` | 1000 | Maximum continuation steps |
 | `EPSL` / `EPSU` / `EPSS` | `1e-8` / `1e-8` / `1e-6` | Convergence tolerances |
 
-The shared defaults are defined in `c.common_model`.
+The defaults are defined in `c.common_model` and overridden where specified in `run_all_experiments.ipynb`.
 
 ## Experiment settings
 
-| Experiment | Driver (PAR) | Range | Fixed contrasts |
+| Experiment | Driver (PAR) | Range | Fixed settings |
 | --- | --- | --- | --- |
-| 1. Productivity | `deltar` (15) | 0 to 1 | `deltas = 0` |
-| 2. Attack rate | `deltas` (16) | 0 to 1 | `deltar = 0` |
-| 3. Fitness-based movement | `beta` (17) | 0 to 20 | `deltar = 0.2`; `deltas = 0.02` |
+| 1. Productivity | `deltar` (15) | 0 to 1 | `deltas = 0`; `beta = 0` and `beta = 5` in separate runs |
+| 2. Interaction strength | `deltas` (16) | 0 to 1 | `deltar = 0`; `beta = 0` and `beta = 5` in separate runs |
+| 3. Fitness-based movement | `beta` (17) | 0 to 5 | `deltar = 0.4`; `deltas = 0.4` |
 
-Unless specified in the **Fixed contrasts** column, all variables are fixed.
+Fishing effort, `mu`, varies along the recovery and collapse curves with the driver; all other model parameters remain fixed at their defaults or the settings shown above.
 
 ## MIT License (MIT)
 
